@@ -26,6 +26,18 @@ CONTRIBUTING.md       Workflow and conventions
 ```
 streamlit run backend/user_interface.py
 ```
+
+### Frontend (dev)
+
+```
+cd frontend
+npm install
+npm run dev
+```
+
+The dev server runs on http://localhost:5173 and proxies `/api` to the backend on http://localhost:8000.
+
+
 ## CI
 
 GitHub Actions runs on every PR to `develop` and `main`: ruff (lint), pytest, frontend build (once `frontend/` exists) and a secrets scan (gitleaks).
