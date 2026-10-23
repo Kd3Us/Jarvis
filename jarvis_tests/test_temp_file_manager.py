@@ -30,6 +30,31 @@ def test_remove_twice_does_not_raise(manager):
     manager.remove(path)
 
 
+def test_remove_ignores_files_not_created_by_manager(manager, tmp_path):
+    foreign = tmp_path / "keep.txt"
+    foreign.write_text("keep")
+    manager.remove(foreign)
+    assert foreign.exists()
+
+
+def test_failed_removal_is_retried_by_cleanup(manager, monkeypatch):
+    path = manager.create(b"x")
+    real_unlink = Path.unlink
+    failures = {"left": 1}
+
+    def flaky_unlink(self, missing_ok=False):
+        if self == path and failures["left"]:
+            failures["left"] -= 1
+            raise PermissionError
+        return real_unlink(self, missing_ok=missing_ok)
+
+    monkeypatch.setattr(Path, "unlink", flaky_unlink)
+    manager.remove(path)
+    assert path.exists()
+    manager.cleanup()
+    assert not path.exists()
+
+
 def test_temp_file_context_removes_file_on_normal_exit(manager):
     with manager.temp_file(b"x", suffix=".png") as path:
         assert path.exists()
@@ -61,11 +86,3 @@ def test_manager_as_context_cleans_up_on_exit():
         path = m.create(b"a")
         assert path.exists()
     assert not path.exists()
-
-
-def test_cleanup_does_not_touch_foreign_files(manager, tmp_path):
-    foreign = tmp_path / "keep.txt"
-    foreign.write_text("keep")
-    manager.create(b"a")
-    manager.cleanup()
-    assert foreign.exists()

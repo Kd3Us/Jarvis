@@ -37,8 +37,14 @@ class TempFileManager:
     def remove(self, path: str | Path) -> None:
         path = Path(path)
         with self._lock:
+            if path not in self._paths:
+                return  # not ours: never delete it
+        try:
+            path.unlink(missing_ok=True)
+        except OSError:
+            return  # keep it tracked so cleanup() retries
+        with self._lock:
             self._paths.discard(path)
-        path.unlink(missing_ok=True)
 
     @contextmanager
     def temp_file(self, data: bytes = b"", suffix: str = "") -> Iterator[Path]:
@@ -51,12 +57,8 @@ class TempFileManager:
     def cleanup(self) -> None:
         with self._lock:
             paths = list(self._paths)
-            self._paths.clear()
         for path in paths:
-            try:
-                path.unlink(missing_ok=True)
-            except OSError:
-                pass  # best effort: never crash the app during cleanup
+            self.remove(path)
 
     def __enter__(self) -> Self:
         return self
