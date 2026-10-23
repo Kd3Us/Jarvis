@@ -88,37 +88,3 @@ class ConversationAgent:
 
 
         self.update_conversation_history(role="assistant", text_interaction=response)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-if __name__ == "__main__":
-    question = input("Pose ta question :\n")
-    response = ask_llm(question)
-    print("\n")
-    print(response)
