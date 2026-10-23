@@ -1,5 +1,6 @@
 from dotenv import dotenv_values
 
+
 def groq_api_key_exist():
 
     variable = dotenv_values(".env")
