@@ -2,6 +2,7 @@ from groq import Groq
 import base64
 from dotenv import load_dotenv
 import os
+from pathlib import Path
 
 
 class ConversationAgent:
@@ -11,7 +12,7 @@ class ConversationAgent:
         self.conversation_history = [
                 {
                     "role": "system",
-                    "content": self.read_file(file_path="./context.txt")
+                    "content": self.read_file(file_path=Path(__file__).parent / "prompts" / "system.md")
                 }
             ]
 
