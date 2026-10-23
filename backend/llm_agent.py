@@ -1,8 +1,9 @@
-from groq import Groq
 import base64
-from dotenv import load_dotenv
 import os
 from pathlib import Path
+
+from dotenv import load_dotenv
+from groq import Groq
 
 
 class ConversationAgent:
