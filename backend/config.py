@@ -1,11 +1,11 @@
-from dotenv import dotenv_value
+from dotenv import dotenv_values
 
 def groq_api_key_exist():
 
-    variable = dotenv_value(".env")
+    variable = dotenv_values(".env")
 
     for key, api_key in variable.item():
-        
+
         if api_key is not None :
             pass
         else:
