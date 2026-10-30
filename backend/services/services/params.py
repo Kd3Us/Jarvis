@@ -29,7 +29,7 @@ def _is_number(value: Any) -> bool:
         isinstance(value, (int, float))
         and not isinstance(value, bool)
         and math.isfinite(value)
-    )tance(value, bool)
+    )
 
 
 @dataclass(frozen=True)
