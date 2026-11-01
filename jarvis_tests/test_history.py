@@ -1,5 +1,6 @@
 from services.history import ConversationHistory, MessageBuilder
 
+
 def make_history_with_images(n=3):
     history = ConversationHistory("prompt système")
     for i in range(n):
