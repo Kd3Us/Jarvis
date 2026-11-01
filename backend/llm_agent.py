@@ -1,7 +1,9 @@
-from groq import Groq
 import base64
-from dotenv import load_dotenv
 import os
+from pathlib import Path
+
+from dotenv import load_dotenv
+from groq import Groq
 
 
 class ConversationAgent:
@@ -11,7 +13,7 @@ class ConversationAgent:
         self.conversation_history = [
                 {
                     "role": "system",
-                    "content": self.read_file(file_path="./context.txt")
+                    "content": self.read_file(file_path=Path(__file__).parent / "prompts" / "system.md")
                 }
             ]
 
@@ -87,37 +89,3 @@ class ConversationAgent:
 
 
         self.update_conversation_history(role="assistant", text_interaction=response)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-if __name__ == "__main__":
-    question = input("Pose ta question :\n")
-    response = ask_llm(question)
-    print("\n")
-    print(response)

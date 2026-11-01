@@ -1,6 +1,8 @@
-import streamlit as st 
-from llm_agent import ConversationAgent
 import base64
+
+import streamlit as st
+from llm_agent import ConversationAgent
+
 
 class UserInterface:
 	def __init__(self):
