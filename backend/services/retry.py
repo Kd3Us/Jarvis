@@ -1,11 +1,12 @@
 import time
-from typing import Callable, TypeVar
+from collections.abc import Callable
+from typing import TypeVar
 
-from backend.services.services.error_translator import (
-    AuthError,
+from backend.services.error_translator import (
     JarvisError,
     ProviderTimeoutError,
     RateLimitError,
+    translate,
 )
 
 T = TypeVar("T")
@@ -21,7 +22,11 @@ class RetryPolicy:
     - Ne réessaie jamais les autres erreurs, par exemple AuthError.
     - S'arrête après ``max_attempts`` appels et relance la dernière erreur.
     - Attente entre deux appels : base_delay, puis x2 à chaque fois, plafonnée à max_delay.
+    - ``run()`` traduit lui-même les erreurs du SDK avec ``translate()`` : une
+      erreur Groq brute (429, timeout) est donc bien réessayée.
+    - Avec 3 tentatives, il y a 2 pauses (0.5 s puis 1 s).
 
+    >>> from backend.services.error_translator import AuthError
     >>> pauses = []
     >>> policy = RetryPolicy(max_attempts=3, base_delay=0.5, sleep=pauses.append)
 
@@ -66,6 +71,20 @@ class RetryPolicy:
     ... except ProviderTimeoutError:
     ...     print("abandon après", len(appels), "essais")
     abandon après 3 essais
+
+    Une erreur brute du SDK Groq est traduite, puis réessayée :
+
+    >>> import groq, httpx
+    >>> req = httpx.Request("POST", "https://api.groq.com")
+    >>> pauses.clear()
+    >>> appels.clear()
+    >>> def timeout_groq():
+    ...     appels.append(1)
+    ...     if len(appels) < 2:
+    ...         raise groq.APITimeoutError(request=req)
+    ...     return "ok"
+    >>> policy.run(timeout_groq), pauses
+    ('ok', [0.5])
     """
 
     def __init__(
@@ -98,8 +117,11 @@ class RetryPolicy:
         for attempt in range(1, self.max_attempts + 1):
             try:
                 return func(*args, **kwargs)
-            except self.retry_on:
-                if attempt == self.max_attempts:
-                    raise
+            except Exception as exc:
+                error = translate(exc)
+                if not isinstance(error, self.retry_on) or attempt == self.max_attempts:
+                    if error is exc:
+                        raise
+                    raise error from exc
                 self.sleep(self.delay_for(attempt))
         raise RuntimeError("inaccessible")
