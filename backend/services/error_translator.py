@@ -45,6 +45,7 @@ class ProviderUnavailableError(JarvisError):
 # ---------- Traduction des erreurs du provider ----------
 AUTH_STATUS: frozenset[int] = frozenset({401, 403})
 RATE_LIMIT_STATUS: int = 429
+TIMEOUT_STATUS: frozenset[int] = frozenset({408, 504})
 
 
 def from_status(status_code: int) -> JarvisError:
@@ -56,6 +57,10 @@ def from_status(status_code: int) -> JarvisError:
     'AuthError'
     >>> type(from_status(429)).__name__
     'RateLimitError'
+    >>> type(from_status(408)).__name__
+    'ProviderTimeoutError'
+    >>> type(from_status(504)).__name__
+    'ProviderTimeoutError'
     >>> type(from_status(503)).__name__
     'ProviderUnavailableError'
     """
@@ -63,6 +68,8 @@ def from_status(status_code: int) -> JarvisError:
         return AuthError()
     if status_code == RATE_LIMIT_STATUS:
         return RateLimitError()
+    if status_code in TIMEOUT_STATUS:
+        return ProviderTimeoutError()
     if status_code >= 500:
         return ProviderUnavailableError()
     return JarvisError()
@@ -72,6 +79,8 @@ def translate(exc: BaseException) -> JarvisError:
     """Traduit une erreur du SDK Groq en erreur Jarvis.
 
     Le texte brut de l'exception d'origine n'est jamais repris.
+    À l'appel, garder la vraie cause pour les logs serveur :
+    ``raise translate(exc) from exc``.
 
     >>> import httpx
     >>> req = httpx.Request("POST", "https://api.groq.com")
