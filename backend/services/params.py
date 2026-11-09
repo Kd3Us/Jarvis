@@ -23,13 +23,18 @@ def _clamp(value: float, low: float, high: float) -> float:
     return max(low, min(value, high))
 
 
+# Bornes par défaut, créées une seule fois (et non dans la signature de fonction)
+DEFAULT_LIMITS = ParamLimits()
+
+
 def _is_number(value: Any) -> bool:
-    """Vrai pour int et float finis, faux pour bool, inf et nan."""
-    return (
-        isinstance(value, (int, float))
-        and not isinstance(value, bool)
-        and math.isfinite(value)
-    )
+    """Vrai pour int et float finis, faux pour bool, inf, nan et entier géant."""
+    if not isinstance(value, (int, float)) or isinstance(value, bool):
+        return False
+    try:
+        return math.isfinite(value)
+    except OverflowError:  # entier trop grand pour un float, ex. 10**400
+        return False
 
 
 @dataclass(frozen=True)
@@ -59,6 +64,10 @@ class GenerationParams:
 
     >>> GenerationParams.from_request({"temperature": "chaud", "max_tokens": True})
     GenerationParams(temperature=0.7, max_tokens=1024)
+    >>> GenerationParams.from_request({"max_tokens": float("inf")}).max_tokens
+    1024
+    >>> GenerationParams.from_request({"max_tokens": 10**400}).max_tokens
+    1024
 
     Bornes personnalisées (par exemple venues de Settings) :
 
@@ -73,20 +82,24 @@ class GenerationParams:
     def from_request(
         cls,
         request: dict[str, Any] | None,
-        limits: ParamLimits = ParamLimits(),
+        limits: ParamLimits = DEFAULT_LIMITS,
     ) -> "GenerationParams":
         """Construit les réglages à partir de la requête, bornés par ``limits``."""
         request = request or {}
 
         temperature = request.get("temperature")
         if _is_number(temperature):
-            temperature = _clamp(float(temperature), limits.min_temperature, limits.max_temperature)
+            temperature = _clamp(
+                float(temperature), limits.min_temperature, limits.max_temperature
+            )
         else:
             temperature = limits.default_temperature
 
         max_tokens = request.get("max_tokens")
         if _is_number(max_tokens):
-            max_tokens = int(_clamp(int(max_tokens), limits.min_max_tokens, limits.max_max_tokens))
+            max_tokens = _clamp(
+                int(max_tokens), limits.min_max_tokens, limits.max_max_tokens
+            )
         else:
             max_tokens = limits.default_max_tokens
 
