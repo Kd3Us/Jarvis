@@ -1,6 +1,6 @@
 import time
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
-from typing import Callable, Iterator
 
 # Étapes mesurées pour chaque échange (tâches 31 et 32)
 STEPS: tuple[str, ...] = ("stt", "llm", "tts")
@@ -11,6 +11,15 @@ class LatencyTracker:
 
     L'horloge est injectée (par défaut time.perf_counter) pour pouvoir la
     remplacer par une fausse horloge dans les tests.
+
+    Règles d'utilisation :
+    - Créer un nouveau tracker pour chaque échange, sinon les durées de
+      l'échange précédent restent dedans.
+    - Chaque étape est mesurée une seule fois par échange : pour le LLM, on
+      entoure tout l'appel avec réessais (RetryPolicy) d'un seul
+      ``measure("llm")``. On obtient ainsi le temps réellement attendu par
+      l'utilisateur, pauses comprises. Une seconde mesure de la même étape
+      remplacerait la première.
 
     >>> temps = iter([10.0, 10.25, 20.0, 21.5])   # fausse horloge, en secondes
     >>> tracker = LatencyTracker(clock=lambda: next(temps))
