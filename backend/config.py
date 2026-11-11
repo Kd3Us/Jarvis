@@ -1,13 +1,19 @@
-from dotenv import dotenv_values
+import os
+from pathlib import Path
 
+from dotenv import load_dotenv
 
-def groq_api_key_exist():
+required_groq_key_list = ["GROQ_KEY", "TOGETHER_API_KEY"]
 
-    variable = dotenv_values(".env")
+def check_api_keys():
 
-    for key, api_key in variable.item():
+    load_dotenv(Path(__file__).parent/".env")
+    missing = [ key for key in required_groq_key_list if not os.getenv(key)]
+    if missing:
+        raise ValueError(
+            f"Error ( Clé(s) API absente(s) ou vide(s) dans le .env : {','.join(missing)})"
+            )
+    
 
-        if api_key is not None :
-            pass
-        else:
-            return f"GROQ_API_KEY ERROR !!!!! any key is actually existing for {key} KEY."
+if __name__ == "__main__":
+    missing  = check_api_keys()
